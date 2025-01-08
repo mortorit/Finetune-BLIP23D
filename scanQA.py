@@ -31,11 +31,27 @@ class ScanQA_fake(Dataset):
         # Fake point cloud features
         pc_features = torch.randn(1, 256, 1408)
 
-        processed_text = self.processor(None, data["question"], return_tensors="pt")['input_ids']
+        print(data["question"])
+        processed_question = self.processor.tokenizer(data["question"], return_tensors="pt", padding="max_length", max_length=64, truncation=True)['input_ids']
+        processed_answer = self.processor.tokenizer(data["answers"][0], return_tensors="pt", padding="max_length", max_length=64, truncation=True)['input_ids']
 
         return {
             "pc_features": pc_features,
-            "question": data["question"],
-            "answer": data["answers"][0],
-            "tokenized_question": processed_text
+            "text": data["question"],
+            "tokenized_answer": processed_answer,
+            "tokenized_question": processed_question
         }
+
+def collate_fn(batch, processor):
+    # pad the input_ids and attention_mask
+    processed_batch = {}
+    for key in batch[0].keys():
+        if key != "text":
+            processed_batch[key] = torch.stack([example[key] for example in batch])
+        else:
+            text_inputs = processor.tokenizer(
+                [example["text"] for example in batch], padding=True, return_tensors="pt"
+            )
+            processed_batch["input_ids"] = text_inputs["input_ids"]
+            processed_batch["attention_mask"] = text_inputs["attention_mask"]
+    return processed_batch

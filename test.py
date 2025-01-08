@@ -47,7 +47,7 @@ blip3d.blip_model.qformer.print_trainable_parameters()
 #     y = blip3d(pc_features_simulated,inputs)
 
 
-train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True)
+train_loader = DataLoader(scanQA_dataset, batch_size=4, shuffle=True)
 
 # Move model to GPU if available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -69,17 +69,17 @@ for epoch in range(num_epochs):
 
     for batch in tqdm(train_loader, desc="Training"):
         # Prepare inputs
-        pc_features = batch["pc_features"].to(device)
-        tokenized_question = batch["tokenized_question"].squeeze(1).to(device)
-        answer = batch["answer"]
+        pc_features = batch["pc_features"].squeeze(1).to(device)  # Simulated point cloud features
+        tokenized_question = batch["tokenized_question"].squeeze(1).to(device)  # Tokenized question
+        tokenized_answer = batch["tokenized_answer"].squeeze(1).to(device)  # Tokenized answer
 
         # Forward pass
-        outputs = blip3d(pc_features, tokenized_question)
+        outputs = blip3d(pc_features, tokenized_question)  # Pass question and features to the model
         logits = outputs.logits  # Model outputs logits of size (batch_size, seq_len, vocab_size)
 
         # Shift logits and labels for loss computation
         shift_logits = logits[:, :-1, :].contiguous()
-        shift_labels = tokenized_question[:, 1:].contiguous()
+        shift_labels = tokenized_answer[:, 1:].contiguous()  # Use answer as target
 
         # Compute loss
         loss = loss_fn(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))

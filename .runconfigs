@@ -1,0 +1,2 @@
+docker_args: -ti -v /home/sbrolli/datasets/shared:/data -v /home/sbrolli/storage:/storage -u 1088:1088
+image_name: sbrolli/cclip
